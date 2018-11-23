@@ -1,0 +1,21 @@
+# depslib dependency file v1.0
+1539418070 source:/home/ljj/Desktop/hybird/hybird CNN/HYBIRD_CNN_CODE/main.cpp
+	<stdlib.h>
+	<tfhe/tfhe.h>
+	<tfhe/tfhe_io.h>
+	<stdio.h>
+	<fstream>
+	<iostream>
+	<time.h>
+	<math.h>
+
+1539487513 source:/home/ljj/Desktop/hybird/HYBIRD_CNN_CODE_test 25*25/main.cpp
+	<stdlib.h>
+	<tfhe/tfhe.h>
+	<tfhe/tfhe_io.h>
+	<stdio.h>
+	<fstream>
+	<iostream>
+	<time.h>
+	<math.h>
+

@@ -1,0 +1,1000 @@
+#include<stdlib.h>
+#include <tfhe/tfhe.h>
+#include <tfhe/tfhe_io.h>
+#include <stdio.h>
+//#include "polynomials.h"
+//#include "lwesamples.h"
+//#include "lwekey.h"
+//#include "lweparams.h"
+//#include "tlwe.h"
+//#include "tgsw.h"
+#include<fstream>
+//#include "cv.h"
+//#include "highgui.h"
+#include <iostream>
+#include<time.h>
+#include<math.h>
+#define random(a,b) (rand()%(b-a+1)+a)
+//#include "swip.h"
+FILE* cloud_key = fopen("cloud.key","rb");//open the cloud_key
+     TFheGateBootstrappingCloudKeySet* bk = new_tfheGateBootstrappingCloudKeySet_fromFile(cloud_key);//export the cloud key set about bootstrapping
+FILE* secret_key = fopen("secret.key","rb");
+   TFheGateBootstrappingSecretKeySet* key = new_tfheGateBootstrappingSecretKeySet_fromFile(secret_key);
+const TFheGateBootstrappingParameterSet* params = bk->params;//define params from bk->params
+const TFheGateBootstrappingParameterSet* params2 = key->params;
+struct hybird
+{
+    LweSample*ciphertext=new_gate_bootstrapping_ciphertext_array(1,params);
+    int decide=0;
+    int value=0;
+};
+using namespace std;
+void not_hybird(struct hybird &result)
+{
+    if(result.decide==0)
+    {
+        if(result.value==0)
+        {
+            result.value=1;
+            return;
+        }
+        else
+        {
+            result.value=0;
+            return;
+        }
+    }
+    else
+    {
+        LweSample*temp=new_gate_bootstrapping_ciphertext_array(1,params);
+        bootsNOT(temp,result.ciphertext,bk);
+        bootsCOPY(result.ciphertext,temp,bk);
+        delete_gate_bootstrapping_ciphertext_array(1,temp);
+    }
+}
+void not_array(struct hybird result[],int a)//not all message
+{
+    for(int i=0;i<a;i++)
+    {
+        not_hybird(result[i]);
+    }
+}
+void xor_hybird(struct hybird &result,struct hybird &a,struct hybird &b)
+{
+    if((a.decide==0)&(b.decide==0)){
+        result.decide=0;
+        result.value=a.value^b.value;
+        return;
+    }
+    if(a.decide==0){
+        if(b.decide==1)
+        {
+            if(a.value==0){
+                bootsCOPY(result.ciphertext,b.ciphertext,bk);
+                result.decide=1;
+                return;
+            }
+            else
+            {
+                bootsNOT(result.ciphertext,b.ciphertext,bk);
+                result.decide=1;
+                return;
+            }
+
+        }
+    }
+    if(a.decide==1)
+    {
+        if(b.decide==1)
+        {
+            bootsXOR(result.ciphertext,a.ciphertext,b.ciphertext,bk);
+            result.decide=1;
+            return;
+        }
+        else
+        {
+            if(b.value==0)
+            {
+                bootsCOPY(result.ciphertext,a.ciphertext,bk);
+                result.decide=1;
+                return;
+            }
+            else
+            {
+                bootsNOT(result.ciphertext,a.ciphertext,bk);
+                result.decide=1;
+                return;
+            }
+        }
+    }
+}
+void and_hybird(struct hybird &result,struct hybird &a,struct hybird &b)
+{
+    if((a.decide==0)&(b.decide==0))
+    {
+        result.decide=0;
+        result.value=(a.value)&(b.value);
+        return;
+    }
+    if((a.decide==1)&(b.decide==1))
+    {
+        result.decide=1;
+        bootsAND(result.ciphertext,a.ciphertext,b.ciphertext,bk);
+        return;
+    }
+    if((a.decide==0)&(b.decide==1))
+    {
+        if(a.value==0)
+        {
+            result.decide=0;
+            result.value=0;
+            return;
+        }
+        else{
+            result.decide=1;
+            bootsCOPY(result.ciphertext,b.ciphertext,bk);
+            return;
+        }
+    }
+    if((a.decide==1)&(b.decide==0))
+    {
+        if(b.value==0)
+        {
+            result.decide=0;
+            result.value=0;
+            return;
+        }
+        else
+        {
+            result.decide=1;
+            bootsCOPY(result.ciphertext,a.ciphertext,bk);
+            return;
+        }
+    }
+}
+void or_hybird(struct hybird &result,struct hybird &a,struct hybird &b)
+{
+    if((a.decide==0)&(b.decide==0))
+    {
+        result.decide=0;
+        result.value=a.value|b.value;
+        return;
+    }
+    if((a.decide==1)&(b.decide==1))
+    {
+        result.decide=1;
+        bootsOR(result.ciphertext,a.ciphertext,b.ciphertext,bk);
+        return;
+    }
+    if((a.decide==0)&(b.decide==1))
+    {
+        if(a.value==0)
+        {
+            bootsCOPY(result.ciphertext,b.ciphertext,bk);
+            result.decide=1;
+            return;
+        }
+        else
+        {
+            result.decide=0;
+            result.value=1;
+            return;
+        }
+    }
+    if((a.decide==1)&(b.decide==0))
+    {
+        if(b.value==0)
+        {
+            bootsCOPY(result.ciphertext,a.ciphertext,bk);
+            result.decide=1;
+            return;
+        }
+        else
+        {
+            result.decide=0;
+            result.value=1;
+            return;
+        }
+    }
+}
+void xnor_hybird(struct hybird &result,struct hybird &a,struct hybird &b)
+{
+    if((a.decide==0)&(b.decide==0))
+    {
+        result.decide=0;
+        result.value=!(a.value^b.value);
+    }
+    if((a.decide==1)&(b.decide==1))
+    {
+        result.decide=1;
+        bootsXNOR(result.ciphertext,a.ciphertext,b.ciphertext,bk);
+    }
+    if((a.decide==0)&(b.decide==1))
+    {
+        if(a.value==1)
+        {
+            bootsCOPY(result.ciphertext,b.ciphertext,bk);
+            result.decide=1;
+        }
+        else
+        {
+            result.decide=1;
+            LweSample*temp=new_gate_bootstrapping_ciphertext_array(1,params);
+            bootsNOT(temp,b.ciphertext,bk);
+            bootsCOPY(result.ciphertext,temp,bk);
+            delete_gate_bootstrapping_ciphertext_array(1,temp);
+        }
+    }
+    if((a.decide==1)&(b.decide==0))
+    {
+        if(b.value==1)
+        {
+            bootsCOPY(result.ciphertext,a.ciphertext,bk);
+            result.decide=1;
+        }
+        else
+        {
+            result.decide=1;
+            LweSample*temp=new_gate_bootstrapping_ciphertext_array(1,params);
+            bootsNOT(temp,a.ciphertext,bk);
+            bootsCOPY(result.ciphertext,temp,bk);
+            delete_gate_bootstrapping_ciphertext_array(1,temp);
+        }
+    }
+}
+void constant_hybird(struct hybird &result)
+{
+    result.decide=0;
+    result.value=0;
+}
+void constant_array(struct hybird result[],int nb_bits)
+{
+    for(int i=0;i<nb_bits;i++)
+    {
+        constant_hybird(result[i]);
+    }
+}
+void copy_hybird(struct hybird &result,struct hybird &a)
+{
+    bootsCOPY(result.ciphertext,a.ciphertext,bk);
+    result.decide=a.decide;
+    result.value=a.value;
+}
+void copy_array(struct hybird result[],struct hybird a[],int nb_bits)
+{
+    for(int i=0;i<nb_bits;i++)
+    {
+        copy_hybird(result[i],a[i]);
+    }
+}
+void delete_hybird(struct hybird &result)
+{
+    delete_gate_bootstrapping_ciphertext_array(1,result.ciphertext);
+}
+void delete_array(int nb_bits,struct hybird result[])
+{
+    for(int i=0;i<nb_bits;i++){
+    delete_hybird(result[i]);
+    }
+}
+void jiemi(struct hybird temp[],int a)
+{
+    for(int i=0;i<a;i++)
+    {
+        if(temp[i].decide==0)
+        {
+            cout<<temp[i].value<<endl;
+
+        }
+        else
+        {
+            int ai=bootsSymDecrypt(temp[i].ciphertext,key);
+            cout<<ai<<endl;
+
+        }
+    }
+}
+void jiemi_number(struct hybird temp[],int a,float &ljj)
+{
+    ljj=0;
+    for(int i=0;i<a;i++)
+    {
+        if(i<a-1)
+        {
+            if(temp[i].decide==0)
+            {
+                ljj=ljj+(temp[i].value)*pow(2,i);
+            }
+            else
+            {
+                int ai=bootsSymDecrypt(temp[i].ciphertext,key);
+                ljj=ljj+ai*pow(2,i);
+            }
+        }
+        else
+        {
+            if(temp[i].decide==0)
+            {
+                ljj=ljj-(temp[i].value)*pow(2,i);
+            }
+            else
+            {
+                int ai=bootsSymDecrypt(temp[i].ciphertext,key);
+                ljj=ljj-ai*pow(2,i);
+            }
+        }
+
+    }
+}
+void full_adder(struct hybird sum[],struct hybird x[],struct hybird y[],int nb_bits,struct hybird &ljj)
+{
+   struct hybird carry[2];
+   struct hybird temp[3];
+   constant_array(carry,2);
+   for(int i=0;i<nb_bits;i++)
+   {
+       xor_hybird(temp[0],x[i],y[i]);
+       xor_hybird(sum[i],temp[0],carry[0]);
+       and_hybird(temp[1],x[i],y[i]);
+       and_hybird(temp[2],carry[0],temp[0]);
+       xor_hybird(carry[1],temp[1],temp[2]);
+       copy_hybird(carry[0],carry[1]);
+   }
+   copy_hybird(ljj,carry[0]);
+   delete_array(2,carry);
+   delete_array(3,temp);
+}
+void full_adder_comcode(struct hybird sum[],struct hybird x[],struct hybird y[],int nb_bits)
+{
+   struct hybird carry[2];
+   struct hybird temp[3];
+   constant_array(carry,2);
+   for(int i=0;i<nb_bits;i++)
+   {
+       xor_hybird(temp[0],x[i],y[i]);
+       xor_hybird(sum[i],temp[0],carry[0]);
+       and_hybird(temp[1],x[i],y[i]);
+       and_hybird(temp[2],carry[0],temp[0]);
+       xor_hybird(carry[1],temp[1],temp[2]);
+       copy_hybird(carry[0],carry[1]);
+   }
+   delete_array(2,carry);
+   delete_array(3,temp);
+}
+void multiply_bowolley(struct hybird final_result[],struct hybird ciphertext1[],struct hybird ciphertext2[],int a,int b)
+{
+    struct hybird sum[a+b];
+    constant_array(sum,a+b);
+    struct hybird first[a+1];
+    constant_array(first,a+1);
+    for(int i=0;i<a;i++)
+    {
+        and_hybird(first[i],ciphertext2[0],ciphertext1[i]);
+    }
+    first[a].decide=0;// add 1 to first variable
+    first[a].value=1;
+    not_hybird(first[a-1]);
+    copy_hybird(sum[0],first[0]);
+    //jiemi(first,a+1);
+    struct hybird result[a];
+    for(int i=0;i<a;i++)
+    {
+        copy_hybird(result[i],first[1+i]);
+    }
+    struct hybird final1[a];
+    struct hybird final_signal;
+    int count=1;
+    for(int i=1;i<b;i++)
+    {
+        struct hybird temp[a];
+        copy_array(temp,result,a);
+        struct hybird carry[a];
+        constant_array(carry,a);
+        if(i<b-1)
+        {
+            for(int m=0;m<a;m++)
+            {
+                and_hybird(carry[m],ciphertext2[count],ciphertext1[m]);
+            }
+            not_hybird(carry[a-1]);
+            struct hybird ljj;
+            full_adder(result,carry,temp,a,ljj);
+            copy_hybird(sum[count],result[0]);
+            count++;
+            struct hybird L[a];
+            constant_array(L,a);
+            for(int j=0;j<a-1;j++)
+            {
+                copy_hybird(L[j],result[j+1]);
+            }
+            copy_hybird(L[a-1],ljj);
+            copy_array(result,L,a);
+            copy_array(final1,result,a);
+            delete_array(a,L);
+            delete_gate_bootstrapping_ciphertext_array(1,ljj.ciphertext);
+        }
+        if(i==b-1)
+        {
+            for(int m=0;m<a;m++)
+            {
+                and_hybird(carry[m],ciphertext2[count],ciphertext1[m]);
+                if(m<a-1)
+                {
+                    not_hybird(carry[m]);
+                }
+            }
+            struct hybird ljj;
+            full_adder(result,carry,temp,a,ljj);
+            copy_hybird(final_signal,ljj);
+            delete_gate_bootstrapping_ciphertext_array(1,ljj.ciphertext);
+        }
+            delete_array(a,temp);
+            delete_array(a,carry);
+    }
+    for(int m=0;m<a;m++)
+    {
+        copy_hybird(sum[m+b-1],result[m]);
+    }
+
+    not_hybird(final_signal);
+    copy_hybird(sum[a+b-1],final_signal);
+    copy_array(final_result,sum,a+b);
+    delete_array(a+b,sum);
+    delete_array(a+1,first);
+    delete_array(a,result);
+    delete_array(a,final1);
+    delete_hybird(final_signal);
+}
+struct HYBIRD_ARRAY_1
+{
+    struct hybird alone[1];
+};
+struct HYBIRD_ARRAY_6
+{
+    struct hybird alone[6];
+};
+struct HYBIRD_ARRAY_25
+{
+    struct hybird alone[25];
+};
+struct HYBIRD_ARRAY_31
+{
+    struct hybird alone[31];
+};
+struct HYBIRD_ARRAY_56
+{
+    struct hybird alone[56];
+};
+struct HYBIRD_ARRAY_20
+{
+    struct hybird alone[20];
+};
+struct HYBIRD_ARRAY_80
+{
+    struct hybird alone[80];
+};
+struct HYBIRD_ARRAY_40
+{
+    struct hybird alone[40];
+};
+struct HYBIRD_ARRAY_50
+{
+    struct hybird alone[50];
+};
+void extend(hybird result[],hybird &temp,int nb_bits)
+{
+    not_hybird(temp);
+    //hybird carry[nb_bits];
+    for(int i=1;i<nb_bits;i++)
+    {
+        copy_hybird(result[i],temp);
+    }
+    result[0].decide=0;
+    result[0].value=1;
+}
+void Binary_Convolution(struct HYBIRD_ARRAY_6 output[24][24],struct HYBIRD_ARRAY_1 input[28][28],struct HYBIRD_ARRAY_1 weight[5][5],int a,int b)
+{
+    for(int output_x=0;output_x<a-b+1;output_x++)//************debug(a-b+1)
+    {
+        for(int output_y=0;output_y<a-b+1;output_y++)//**********debug(a-b+1)
+        {
+        hybird sum[6];
+        hybird carry[6];
+        constant_array(sum,6);
+        constant_array(carry,6);
+        for(int keral_x=0;keral_x<b;keral_x++)
+        {
+            for(int keral_y=0;keral_y<b;keral_y++)
+            {
+                hybird temp;
+                hybird tempextend[6];
+                constant_hybird(temp);
+                constant_array(tempextend,6);
+                xnor_hybird(temp,weight[keral_x][keral_y].alone[0],input[keral_x+output_x][keral_y+output_y].alone[0]);
+                extend(tempextend,temp,6);
+                full_adder_comcode(sum,tempextend,carry,6);
+                copy_array(carry,sum,6);
+                delete_array(6,tempextend);
+                delete_hybird(temp);
+            }
+        }
+        cout<<"Binary_Convolution local : "<<output_x<<" & "<<output_y<<endl;
+        copy_array(output[output_x][output_y].alone,sum,6);
+        //jiemi(output[0][0].alone,6);
+        delete_array(6,sum);
+        delete_array(6,carry);
+
+    }
+    }
+}
+void dot_product(struct HYBIRD_ARRAY_40 result[24][24],struct HYBIRD_ARRAY_20 input[24][24],struct HYBIRD_ARRAY_20 K[24][24],int n)
+{
+    for(int i=0;i<n;i++)//debug n
+    {
+        for(int j=0;j<n;j++)//debug n
+        {
+            multiply_bowolley(result[i][j].alone,K[i][j].alone,input[i][j].alone,20,20);
+            cout<<"location dot_product :"<<i<<" & "<<j<<endl;
+        }
+    }
+}
+void XNOR_CONV(struct HYBIRD_ARRAY_50 result[24][24],struct HYBIRD_ARRAY_1 input[28][28],struct HYBIRD_ARRAY_1 weight[5][5],struct HYBIRD_ARRAY_20 K[24][24],struct hybird alpha[25])
+{
+    HYBIRD_ARRAY_6 temp[24][24];
+    HYBIRD_ARRAY_40 TEMP1[24][24];
+    for(int i=0;i<24;i++)
+    {
+        for(int j=0;j<24;j++)
+        {
+            constant_array(temp[i][j].alone,6);
+            constant_array(TEMP1[i][j].alone,40);
+        }
+    }
+    Binary_Convolution(temp,input,weight,28,5);
+    cout<<"finish Binary_Convolution"<<endl;
+    struct HYBIRD_ARRAY_20 temp_20[24][24];
+    for(int row=0;row<24;row++)
+    {
+        for(int col=0;col<24;col++)
+        {
+            struct hybird ALICE;
+            copy_hybird(ALICE,temp[row][col].alone[5]);
+            for(int i=0;i<6;i++)
+            {
+                copy_hybird(temp_20[row][col].alone[i],temp[row][col].alone[i]);
+            }
+            for(int i=6;i<20;i++)
+            {
+                copy_hybird(temp_20[row][col].alone[i],ALICE);
+            }
+            delete_hybird(ALICE);
+        }
+    }
+    cout<<"finish 6_bits to 20_bits"<<endl;
+    dot_product(TEMP1,temp_20,K,24);
+    struct HYBIRD_ARRAY_25 TEMP_1[24][24];
+    for(int i=0;i<24;i++)
+    {
+        for(int j=0;j<24;j++)
+        {
+            for(int m=0;m<25;m++)
+            {
+                copy_hybird(TEMP_1[i][j].alone[m],TEMP1[i][j].alone[m]);
+            }
+        }
+    }
+    cout<<"finish dot_product"<<endl;
+    clock_t start,finish;
+    double totaltime;
+    start=clock();
+    for(int row=0;row<24;row++)
+    {
+        for(int col=0;col<24;col++)
+        {
+            multiply_bowolley(result[row][col].alone,TEMP_1[row][col].alone,alpha,25,25);
+        }
+    }
+    finish=clock();
+    totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
+    cout<<"all 24*24 alpha multiply ciphertext "<<totaltime<<"秒！"<<endl;
+    for(int i=0;i<24;i++)
+    {
+        for(int j=0;j<24;j++)
+        {
+            delete_array(6,temp[i][j].alone);
+            delete_array(40,TEMP1[i][j].alone);
+            delete_array(20,temp_20[i][j].alone);
+            delete_array(25,TEMP_1[i][j].alone);
+        }
+    }
+
+}
+void CONVOLUTION_RELU(struct HYBIRD_ARRAY_25 result[24][24],struct HYBIRD_ARRAY_50 input[24][24],struct hybird b_weight[25])
+{
+    for(int row=0;row<24;row++)
+    {
+        for(int col=0;col<24;col++)
+        {
+            for(int m=0;m<25;m++)
+            {
+                copy_hybird(result[row][col].alone[m],input[row][col].alone[m+15]);
+            }
+            struct hybird T[25];
+            full_adder_comcode(T,b_weight,result[row][col].alone,25);
+            copy_array(result[row][col].alone,T,25);
+            delete_array(25,T);
+            if((result[row][col].alone[24].decide==0)&(result[row][col].alone[24].value==1))
+            {
+                constant_array(result[row][col].alone,25);
+            }
+            if(result[row][col].alone[24].decide==1)
+            {
+                struct hybird ALICE;
+                struct hybird TEMP[25];
+                copy_hybird(ALICE,result[row][col].alone[24]);
+                not_hybird(ALICE);
+                for(int i=0;i<25;i++)
+                {
+                    and_hybird(TEMP[i],ALICE,result[row][col].alone[i]);
+                }
+                copy_array(result[row][col].alone,TEMP,25);
+                delete_array(25,TEMP);
+                delete_hybird(ALICE);
+            }
+
+        }
+    }
+}
+void MUX(struct hybird &result,struct hybird &temp,struct hybird &a,struct hybird &b)
+{
+    struct hybird carry;
+    struct hybird tmp1;
+    struct hybird tmp2;
+    copy_hybird(tmp1,temp);
+    not_hybird(tmp1);
+    and_hybird(carry,temp,a);
+    and_hybird(tmp2,tmp1,b);
+    xor_hybird(result,carry,tmp2);
+    delete_hybird(carry);
+    delete_hybird(tmp1);
+    delete_hybird(tmp2);
+}
+void hybird_compare_bit(struct hybird &result,struct hybird &a,struct hybird &b,struct hybird &lsb_carry,struct hybird &tmp)
+{
+    xnor_hybird(tmp,a,b);
+    MUX(result,tmp,lsb_carry,a);
+
+}
+void hybird_max_calcute(struct hybird result[],struct hybird a[],struct hybird b[],int nb_bits)
+{
+    struct hybird tmps0;
+    struct hybird tmps1;
+    constant_hybird(tmps0);
+    for(int i=0;i<nb_bits;i++)
+    {
+        hybird_compare_bit(tmps0,a[i],b[i],tmps0,tmps1);
+    }
+    for(int i=0;i<nb_bits;i++)
+    {
+        MUX(result[i],tmps0,a[i],b[i]);
+    }
+    delete_hybird(tmps0);
+    delete_hybird(tmps1);
+}
+void HYBIRD_SPOOL(struct HYBIRD_ARRAY_25 result[12][12],struct HYBIRD_ARRAY_25 input[24][24])
+{
+    for(int i=0;i<12;i++)
+    {
+        for(int j=0;j<12;j++)
+        {
+            struct hybird temp0[25];
+            struct hybird temp1[25];
+            hybird_max_calcute(temp0,input[2*i][2*j].alone,input[2*i][2*j+1].alone,25);
+            hybird_max_calcute(temp1,input[2*i+1][2*j].alone,input[2*i+1][2*j+1].alone,25);
+            hybird_max_calcute(result[i][j].alone,temp0,temp1,25);
+            delete_array(25,temp0);
+            delete_array(25,temp1);
+        }
+    }
+}
+void FLATTEN(struct HYBIRD_ARRAY_25 result[432],struct HYBIRD_ARRAY_25 input1[12][12],struct HYBIRD_ARRAY_25 input2[12][12],struct HYBIRD_ARRAY_25 input3[12][12])
+{
+    for(int i=0;i<12;i++)
+    {
+        for(int j=0;j<12;j++)
+        {
+            copy_array(result[i*12+j].alone,input1[i][j].alone,25);
+            copy_array(result[i*12+j+144].alone,input2[i][j].alone,25);
+            copy_array(result[i*12+j+288].alone,input3[i][j].alone,25);
+        }
+    }
+}
+void HYBIRD_FULLCONNECTION(struct hybird result[50],struct HYBIRD_ARRAY_25 a[432],struct HYBIRD_ARRAY_25 b[432])
+{
+    struct hybird sum[50];
+    struct hybird carry[50];
+    for(int i=0;i<432;i++)
+    {
+        struct hybird temp[50];
+        multiply_bowolley(temp,a[i].alone,b[i].alone,25,25);
+        full_adder_comcode(sum,carry,temp,50);
+        copy_array(carry,sum,50);
+    }
+    copy_array(result,sum,50);
+    delete_array(50,sum);
+    delete_array(50,carry);
+}
+void FINAL_FULLCONNECTION(struct HYBIRD_ARRAY_25 FINAL_RESULT[10],struct HYBIRD_ARRAY_25 input[432],int full_connection[4320])
+{
+    for(int m=0;m<10;m++)
+    {
+        struct HYBIRD_ARRAY_25 full_params[432];
+        struct hybird result[50];
+        for(int r=0;r<432;r++)
+        {
+            for(int k=0;k<25;k++)
+            {
+                full_params[r].alone[k].decide=0;
+                full_params[r].alone[k].value=(full_connection[m*432+r]>>k)&1;
+            }
+        }
+        HYBIRD_FULLCONNECTION(result,input,full_params);
+        for(int i=0;i<25;i++)
+        {
+            copy_hybird(FINAL_RESULT[m].alone[i],result[i+15]);
+        }
+        delete_array(50,result);
+        for(int i=0;i<432;i++)
+        {
+            delete_array(25,full_params[i].alone);
+        }
+    }
+}
+int main()
+{
+
+    cout<<"start coding"<<endl;
+    cout<<"first step : read convolution weight"<<endl;
+    int orignal_convolution[75];
+    ifstream infile;
+    infile.open("convolution_new.txt",ios::in);
+    int *ptr=&orignal_convolution[0];
+    while(!infile.eof())
+    {
+        infile>>*ptr;
+        ptr++;
+    }
+    infile.close();
+    HYBIRD_ARRAY_1 orignal_formation[75];
+    for(int i=0;i<75;i++)
+    {
+        orignal_formation[i].alone[0].decide=0;
+        orignal_formation[i].alone[0].value=orignal_convolution[i];
+    }
+    cout<<"second step : read secret input and K_data"<<endl;
+    HYBIRD_ARRAY_1 input[28][28];
+    HYBIRD_ARRAY_20 K[24][24];
+
+        FILE* cloud_data1 = fopen("secret_cloud.data","rb");//open cloud.data
+        //struct data input[28][28];
+        for(int row=0;row<28;row++)
+            {
+                for(int col=0;col<28;col++)
+                    {
+                        for (int i=0; i<1; i++) import_gate_bootstrapping_ciphertext_fromFile(cloud_data1, input[row][col].alone[0].ciphertext, params);
+                        input[row][col].alone[0].decide=1;
+                    }
+            }
+        fclose(cloud_data1);
+        FILE* cloud_data2=fopen("K_cloud.data","rb");
+            for(int row=0;row<24;row++)
+            {
+                for(int col=0;col<24;col++)
+                {
+                    for(int i=0;i<20;i++)
+                    {
+                        import_gate_bootstrapping_ciphertext_fromFile(cloud_data2,K[row][col].alone[i].ciphertext,params);
+                        K[row][col].alone[i].decide=1;
+                    }
+                }
+            }
+        fclose(cloud_data2);
+        HYBIRD_ARRAY_1 weight1[5][5];
+        HYBIRD_ARRAY_1 weight2[5][5];
+        HYBIRD_ARRAY_1 weight3[5][5];
+        int count=0;
+        for(int i=0;i<5;i++)
+        {
+            for(int j=0;j<5;j++)
+            {
+                copy_array(weight1[i][j].alone,orignal_formation[count].alone,1);
+                copy_array(weight2[i][j].alone,orignal_formation[count+25].alone,1);
+                copy_array(weight3[i][j].alone,orignal_formation[count+50].alone,1);
+                count++;
+            }
+        }
+        double alpha1_d=0.197217*pow(2,15);
+        double alpha2_d=0.257060*pow(2,15);
+        double alpha3_d=0.218428*pow(2,15);
+        int alpha_int=alpha1_d;
+        int alpha2_int=alpha2_d;
+        int alpha3_int=alpha3_d;
+        struct hybird alpha[25];
+        struct hybird alpha2[25];
+        struct hybird alpha3[25];
+        for(int i=0;i<25;i++)
+        {
+            if(i<20)
+            {
+            alpha[i].decide=0;
+            alpha[i].value=((alpha_int>>i)&1);
+            alpha2[i].decide=0;
+            alpha2[i].value=((alpha2_int>>i)&1);
+            alpha3[i].decide=0;
+            alpha3[i].value=((alpha3_int>>i)&1);
+            }
+            else
+            {
+                alpha[i].decide=0;
+                alpha[i].value=0;
+                alpha2[i].decide=0;
+                alpha2[i].value=0;
+                alpha3[i].decide=0;
+                alpha3[i].value=0;
+            }
+        }
+        struct HYBIRD_ARRAY_50 CONV_RESULT1[24][24];
+        struct HYBIRD_ARRAY_50 CONV_RESULT2[24][24];
+        struct HYBIRD_ARRAY_50 CONV_RESULT3[24][24];
+   cout<<"start xnor-convolution"<<endl;
+
+   clock_t start,finish;
+    double totaltime;
+    start=clock();
+
+   XNOR_CONV(CONV_RESULT1,input,weight1,K,alpha);
+   XNOR_CONV(CONV_RESULT2,input,weight2,K,alpha2);
+   XNOR_CONV(CONV_RESULT3,input,weight3,K,alpha3);
+
+   finish=clock();
+    totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
+    cout<<"\n此程序的运行时间为"<<totaltime<<"秒！"<<endl;
+    cout<<"end of convolution"<<endl;
+    //delete critical number
+    for(int i=0;i<5;i++)
+    {
+        for(int j=0;j<5;j++)
+        {
+            delete_array(1,weight1[i][j].alone);
+            delete_array(1,weight2[i][j].alone);
+            delete_array(1,weight3[i][j].alone);
+        }
+    }
+    for(int i=0;i<24;i++)
+    {
+        for(int j=0;j<24;j++)
+        {
+            delete_array(20,K[i][j].alone);
+        }
+    }
+    for(int i=0;i<28;i++)
+    {
+        for(int j=0;j<28;j++)
+        {
+            delete_array(1,input[i][j].alone);
+        }
+    }
+    delete_array(25,alpha);
+    delete_array(25,alpha2);
+    delete_array(25,alpha3);
+    for(int i=0;i<75;i++)
+    {
+        delete_array(1,orignal_formation[i].alone);
+    }
+    double b1=-0.7915*pow(2,15);
+    double b2=-1.5237*pow(2,15);
+    double b3=-1.3206*pow(2,15);
+    int b1_int=b1;
+    int b2_int=b2;
+    int b3_int=b3;
+    struct hybird b1_weight[25];
+    struct hybird b2_weight[25];
+    struct hybird b3_weight[25];
+    struct HYBIRD_ARRAY_25 pool1[24][24];
+    struct HYBIRD_ARRAY_25 pool2[24][24];
+    struct HYBIRD_ARRAY_25 pool3[24][24];
+    struct HYBIRD_ARRAY_25 OUT_pool1[12][12];
+    struct HYBIRD_ARRAY_25 OUT_pool2[12][12];
+    struct HYBIRD_ARRAY_25 OUT_pool3[12][12];
+    for(int i=0;i<25;i++)
+    {
+        b1_weight[i].decide=0;
+        b1_weight[i].value=(b1_int>>i)&1;
+        b2_weight[i].decide=0;
+        b2_weight[i].value=(b2_int>>i)&1;
+        b3_weight[i].decide=0;
+        b3_weight[i].value=(b3_int>>i)&1;
+
+    }
+    //active RELU and spool
+    cout<<"start RELU and spool"<<endl;
+    CONVOLUTION_RELU(pool1,CONV_RESULT1,b1_weight);
+    CONVOLUTION_RELU(pool2,CONV_RESULT2,b2_weight);
+    CONVOLUTION_RELU(pool3,CONV_RESULT3,b3_weight);
+    HYBIRD_SPOOL(OUT_pool1,pool1);
+    HYBIRD_SPOOL(OUT_pool2,pool2);
+    HYBIRD_SPOOL(OUT_pool3,pool3);
+    delete_array(25,b1_weight);
+    delete_array(25,b2_weight);
+    delete_array(25,b3_weight);
+    for(int i=0;i<24;i++)
+    {
+        for(int j=0;j<24;j++)
+        {
+            delete_array(25,pool1[i][j].alone);
+            delete_array(25,pool2[i][j].alone);
+            delete_array(25,pool3[i][j].alone);
+            delete_array(50,CONV_RESULT1[i][j].alone);
+            delete_array(50,CONV_RESULT2[i][j].alone);
+            delete_array(50,CONV_RESULT3[i][j].alone);
+        }
+    }
+    cout<<" end of RELU and spooling"<<endl;
+    struct HYBIRD_ARRAY_25 INPUT_fullconnection[432];
+    cout<<"start flatten"<<endl;
+    FLATTEN(INPUT_fullconnection,OUT_pool1,OUT_pool2,OUT_pool3);
+    cout<<"finish flatten"<<endl;
+    for(int i=0;i<12;i++)
+    {
+        for(int j=0;j<12;j++)
+        {
+            delete_array(25,OUT_pool1[i][j].alone);
+            delete_array(25,OUT_pool2[i][j].alone);
+            delete_array(25,OUT_pool3[i][j].alone);
+        }
+    }
+    int r_full[4320];
+    ifstream infile12;
+        infile12.open("full_connection_new.txt",ios::in);
+        int *ptr12=&r_full[0];
+        while(!infile12.eof())
+        {
+            infile12>>*ptr12;
+            ptr12++;
+        }
+        infile12.close();
+        struct HYBIRD_ARRAY_25 NEW_WORLD[10];
+FINAL_FULLCONNECTION(NEW_WORLD,INPUT_fullconnection,r_full);
+cout<<"first result"<<endl;
+jiemi(NEW_WORLD[0].alone,25);
+cout<<"second result"<<endl;
+jiemi(NEW_WORLD[1].alone,25);
+
+    int final_result[3][25];
+for(int m=0;m<3;m++){
+        for(int i=0;i<25;i++)
+        {
+            if(INPUT_fullconnection[m].alone[i].decide==0)
+            {
+                final_result[m][i]=INPUT_fullconnection[m].alone[i].value;
+            }
+            else
+            {
+                final_result[m][i]=bootsSymDecrypt(INPUT_fullconnection[m].alone[i].ciphertext,key);
+            }
+        }
+}
+        fstream outfile3;
+    outfile3.open("result_new.txt",ios::out);
+    for(int m=0;m<3;m++){
+    for(int i=0;i<25;i++)
+    {
+        outfile3<<final_result[m][i];
+        outfile3<<" ";
+    }
+    }
+    outfile3.close();
+    //spooling float data calculate
+
+    return 0;
+}
