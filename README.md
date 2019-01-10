@@ -1,3 +1,5 @@
 XNOR-HYBRID CNN
 ====
+Description
+-----
 
