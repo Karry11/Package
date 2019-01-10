@@ -1,3 +1,3 @@
-# Package
-lijjj
-===
+XNOR-HYBRID CNN
+====
+
