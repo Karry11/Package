@@ -18,5 +18,3 @@ Documents Description
 Binactive Operation on user's data and server's weight: 0.bmp is an image which be regarded user's data. Secretkey.data is the key to encrypt the privacy data. K_cloud.data and Secret_cloud.data are regared as the inputs on cloud calculation. If you want to run the code, just enter "g++ your-program.cpp -o your-program -ltfhe-spqlios-fma" in the terminal.
 
 Xnor-Hybrid CNN: K_cloud.data and Secret_cloud.data are inputs for Xnor-Hybrid CNN. convolution_new.txt and fullconnection_new.txt are CNN model's parameters. In the terminal, you can enter "g++ main.cpp -o output -ltfhe-spqlios-fma" to run the code.
-
-
