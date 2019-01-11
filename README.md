@@ -21,10 +21,12 @@ Xnor-Hybrid CNN: K_cloud.data and Secret_cloud.data are inputs for Xnor-Hybrid C
 
 Result
 -----
-Time consumption for XNOR-Hybrid models
-![](https://github.com/Karry11/Package/blob/master/Models.png
-)
+Time consumption for XNOR-Hybrid models  
 
-Test model accuracy on plaintext and ciphertext
+![](https://github.com/Karry11/Package/blob/master/Models.png
+)  
+
+Test model accuracy on plaintext and ciphertext  
+
 ![](https://github.com/Karry11/Package/blob/master/Comparision.png
 )
