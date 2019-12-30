@@ -1,12 +1,11 @@
-Deep Binarized Convolutional Neural Network
-Inferences over Encrypted Data
+Deep Binarized Convolutional Neural Network Inferences over Encrypted Data
 ====
 
 
 Description
 -----
-Deep learning is becoming more and more popular. However it cost large time on calculating privacy data with fully homomorphic  encryption. We propose an effcient and secure way to deal with privacy data by CNN model.
-In our model, we define that the client encrypt their privacy by himself. On the cloud, we construct the way to perform homomorphic operations between the client's data and plaintext parameters. After finishing homomorphic calculation on services, it will return a result to the client under encrypted. In the entire process, we can't decrypt privacy data because of without secret key. So it can be proved that client's privacy data won't be leaked.
+Deep learning is becoming more and more popular. However it cost large time on calculating privacy data with fully homomorphic  encryption(FHE). We propose an effcient and secure way to deal with privacy data by binarized CNN model.
+In our model, privacy data is encrypted on the client-side. On the service, we use bit-wise homomorphic operations to construct binarized CNN inference which can perform homomorphic calculation between encrypted data and plaintext weights. After finishing homomorphic calculation on services, it will return the result to the client under encrypted. In the entire process, encrypted data won't be decrypted without secret key. So it can be proved that client's privacy data won't be leaked.
 
 
 Require For Experiments
@@ -18,7 +17,7 @@ Documents Description
 -----
 Binactive Operation on user's data and server's weight: 0.bmp is an image which be regarded user's data. Secretkey.data is the key to encrypt the privacy data. K_cloud.data and Secret_cloud.data are regared as the inputs on cloud calculation. If you want to run the code, just enter "g++ your-program.cpp -o your-program -ltfhe-spqlios-fma" in the terminal.
 
-Xnor-Hybrid CNN: K_cloud.data and Secret_cloud.data are inputs for Xnor-Hybrid CNN. convolution_new.txt and fullconnection_new.txt are CNN model's parameters. In the terminal, you can enter "g++ main.cpp -o output -ltfhe-spqlios-fma" to run the code. 
+Binarized CNN: K_cloud.data and Secret_cloud.data are inputs for Binarized CNN. convolution_new.txt and fullconnection_new.txt are CNN model's parameters. In the terminal, you can enter "g++ main.cpp -o output -ltfhe-spqlios-fma" to run the code. 
 
 Result
 -----
