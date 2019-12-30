@@ -1,12 +1,13 @@
-XNOR-HYBRID CNN ON ENCRYPTED DATA
+Deep Binarized Convolutional Neural Network
+Inferences over Encrypted Data
 ====
 
 
 Description
 -----
 Deep learning is becoming more and more popular. However it cost large time on calculating privacy data with fully homomorphic  encryption. We propose an effcient and secure way to deal with privacy data by CNN model.
-In our model, we define that the client encrypt their privacy by himself. On the cloud, we construct the way to have operations between the client's data and plaintext parameters. After finishing calculating between data, cloud will return a result to the client under encrypted. In the entire process, we can't decrypt privacy data because of without secret key. So it can be proved that client's privacy data won't be leaked.
-  
+In our model, we define that the client encrypt their privacy by himself. On the cloud, we construct the way to perform homomorphic operations between the client's data and plaintext parameters. After finishing homomorphic calculation on services, it will return a result to the client under encrypted. In the entire process, we can't decrypt privacy data because of without secret key. So it can be proved that client's privacy data won't be leaked.
+
 
 Require For Experiments
 -----
