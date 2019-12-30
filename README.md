@@ -21,6 +21,8 @@ Binarized CNN: K_cloud.data and Secret_cloud.data are inputs for Binarized CNN. 
 
 Result
 -----
+All of result analysis can be find in our paper.
+
 
 ![](https://github.com/Karry11/Package/blob/master/models.png
 )  
