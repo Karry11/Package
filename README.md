@@ -21,12 +21,12 @@ Binarized CNN: K_cloud.data and Secret_cloud.data are inputs for Binarized CNN. 
 
 Result
 -----
-Time consumption for XNOR-Hybrid models  
 
-![](https://github.com/Karry11/Package/blob/master/Models.png
+![](https://github.com/Karry11/Package/blob/master/models.png
 )  
 
-Test model accuracy on plaintext and ciphertext  
+![](https://github.com/Karry11/Package/blob/master/operations.png
+)  
 
-![](https://github.com/Karry11/Package/blob/master/Comparision.png
+![](https://github.com/Karry11/Package/blob/master/time.png
 )
